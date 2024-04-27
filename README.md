@@ -1,11 +1,11 @@
 # terminal-chat
 
-a simple terminal based chatting app using Python(3.11.5)
+A simple terminal based chatting app using Python(3.11.5)
 
 ## Installation
 
-download the repo.
-install the requirements : ```pip3 install -r requirements.txt ```
+Download the repo.
+Install the requirements : ```pip3 install -r requirements.txt ```
 
 ## Features
 
