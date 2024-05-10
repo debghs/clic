@@ -12,7 +12,6 @@ This is a simple chat application that allows multiple clients to connect to a s
 ## Requirements
 
 - Python 3.x
-- Click library (for command-line interface, installed automatically)
 
 ## Installation
 
