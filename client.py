@@ -7,6 +7,7 @@ class ChatClient:
         self.server_port = port
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.username = None
+        self.user_color = None
 
     def connect(self):
         self.client_socket.connect((self.server_host, self.server_port))
@@ -40,6 +41,8 @@ class ChatClient:
         self.username = input("Enter your username>>>")
         self.send_message(self.username)
 
+        self.user_color = self.client_socket.recv(1024).decode('utf-8')  # Receive color code
+
         receive_thread = threading.Thread(target=self.receive_messages)
         send_thread = threading.Thread(target=self.send_messages)
 
@@ -54,3 +57,4 @@ class ChatClient:
 if __name__ == "__main__":
     client = ChatClient('localhost', 5555)
     client.start()
+    	
