@@ -18,6 +18,8 @@ class ChatClient:
         while True:
             try:
                 message = self.client_socket.recv(1024).decode('utf-8')
+                if not message:
+                    break
                 if message == 'QUIT':
                     print("You have logged out successfully.")
                     break
@@ -37,7 +39,7 @@ class ChatClient:
 
     def start(self):
         self.connect()
-        self.username = input("Enter your username>>>")
+        self.username = input("Enter your username>>> ")
         self.send_message(self.username)
 
         receive_thread = threading.Thread(target=self.receive_messages)

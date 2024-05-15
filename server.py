@@ -14,6 +14,8 @@ class ChatServer:
         while True:
             try:
                 message = client_socket.recv(1024).decode('utf-8')
+                if not message:
+                    break
                 if message == 'QUIT':
                     client_socket.send('QUIT'.encode('utf-8'))
                     del self.clients[username]
