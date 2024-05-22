@@ -25,7 +25,10 @@ class ChatServer:
                     break
                 elif message.startswith('@'):
                     recipient, msg_content = self.parse_private_message(message)
-                    self.send_private_message(username, recipient, msg_content)
+                    if recipient and msg_content:
+                        self.send_private_message(username, recipient, msg_content)
+                    else:
+                        client_socket.send("Invalid private message format. Use '@username message'.\n".encode('utf-8'))
                 else:
                     self.broadcast(username, message)
             except Exception as e:
@@ -45,6 +48,8 @@ class ChatServer:
 
     def parse_private_message(self, message):
         parts = message.split(' ', 1)
+        if len(parts) < 2:
+            return None, None
         recipient = parts[0][1:]
         msg_content = parts[1]
         return recipient, msg_content
