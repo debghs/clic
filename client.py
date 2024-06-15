@@ -10,6 +10,8 @@ class ChatClient:
         self.username = None
         self.messages = []
         self.running = True
+        self.input_window = None
+        self.message_window = None
 
     def connect(self):
         self.client_socket.connect((self.server_host, self.server_port))
@@ -27,63 +29,79 @@ class ChatClient:
                     self.messages.append("You have logged out successfully.")
                     break
                 self.messages.append(message)
+                if self.message_window:
+                    self.display_messages(self.message_window)
+                    self.message_window.refresh()
             except Exception as e:
                 self.messages.append(f"Error receiving message: {e}")
                 break
 
     def start(self, stdscr):
         self.connect()
-        self.username = self.get_user_input(stdscr, "Enter your username: ")
+
+        self.setup_curses(stdscr)
+
+        self.username = self.get_username_input(stdscr, "Enter your username: ")
         self.send_message(self.username)
 
         receive_thread = threading.Thread(target=self.receive_messages)
         receive_thread.start()
 
-        try:
-            while True:
-                self.display_messages(stdscr)
-                stdscr.refresh()
-                curses.napms(100)
-                message = self.get_user_input(stdscr, "Enter message: ")
-                if message.upper() == 'QUIT':
-                    self.send_message(message)
-                    self.running = False
-                    break
-                else:
-                    self.send_message(message)
-        finally:
-            self.running = False
-            receive_thread.join()
-            self.client_socket.close()
+        input_thread = threading.Thread(target=self.input_handler)
+        input_thread.start()
+
+        while self.running:
+            self.update_windows()
+            curses.napms(100)
+
+        receive_thread.join()
+        self.client_socket.close()
+
+    def setup_curses(self, stdscr):
+        curses.curs_set(0)
+        h, w = stdscr.getmaxyx()
+        self.message_window = stdscr.subwin(h - 1, w, 0, 0)
+        self.input_window = stdscr.subwin(1, w, h - 1, 0)
+        self.input_window.keypad(True)
+        self.input_window.addstr(0, 0, "Enter message: ")
+        self.input_window.refresh()
+
+    def update_windows(self):
+        self.display_messages(self.message_window)
+        self.input_window.refresh()
 
     def display_messages(self, stdscr):
         stdscr.clear()
         h, w = stdscr.getmaxyx()
-        msg_display_height = h - 2
+        msg_display_height = h - 1
         for idx, message in enumerate(self.messages[-msg_display_height:]):
             stdscr.addstr(idx, 0, message)
 
-    def get_user_input(self, stdscr, prompt):
-        h, w = stdscr.getmaxyx()
-        input_win = curses.newwin(1, w, h-1, 0)
-        input_win.addstr(0, 0, prompt)
-        input_win.refresh()
-        input_str = ""
-        curses.echo()
-        while True:
-            key = input_win.getch()
-            if key == curses.KEY_ENTER or key == 10:
+    def input_handler(self):
+        while self.running:
+            message = self.get_message_input(self.input_window)
+            if message.upper() == 'QUIT':
+                self.send_message(message)
+                self.running = False
                 break
-            elif key == curses.KEY_BACKSPACE or key == 127:
-                if len(input_str) > 0:
-                    input_str = input_str[:-1]
-                    input_win.clear()
-                    input_win.addstr(0, 0, prompt + input_str)
-                    input_win.refresh()
             else:
-                input_str += chr(key)
-                input_win.addstr(0, 0, prompt + input_str)
-                input_win.refresh()
+                self.send_message(message)
+
+    def get_username_input(self, stdscr, prompt):
+        stdscr.clear()
+        stdscr.addstr(0, 0, prompt)
+        stdscr.refresh()
+        curses.echo()
+        input_str = stdscr.getstr(0, len(prompt)).decode('utf-8')
+        curses.noecho()
+        return input_str
+
+    def get_message_input(self, stdscr):
+        stdscr.clear()
+        stdscr.addstr(0, 0, "Enter message: ")
+        stdscr.refresh()
+        curses.echo()
+        input_str = stdscr.getstr(0, len("Enter message: ")).decode('utf-8')
         curses.noecho()
         return input_str
 
