@@ -1,6 +1,6 @@
-# Terminal-Chat
+# Clic
 
-This is a simple chat application that allows multiple clients to connect to a server and communicate with each other in real-time using TCP sockets.
+Clic is a simple chat application that allows multiple clients to connect to a server and communicate with each other in real-time using TCP sockets.
 
 ## Features
 
