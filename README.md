@@ -18,13 +18,13 @@ Clic is a simple chat application that allows multiple clients to connect to a s
 1. Clone the repository:
 
     ```
-    git clone https://github.com/debghs/terminal-chat.git
+    git clone https://github.com/debghs/clic.git
     ```
 
 2. Navigate to the project directory:
 
     ```
-    cd terminal-chat
+    cd clic
     ```
 
 3. Install the required dependencies:
