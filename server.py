@@ -7,6 +7,7 @@ class ChatServer:
         self.host = host
         self.port = port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.clients = {}
         self.pending_messages = {}
 
@@ -44,17 +45,20 @@ class ChatServer:
                 print(f"Error broadcasting to a client: {e}")
 
     def parse_private_message(self, message):
-        parts = message.split(' ', 1)
-        if len(parts) == 2:
+        parts = message.split(' ', 2)
+        if len(parts) >= 2:
             recipient = parts[0][1:]
-            msg_content = parts[1]
+            msg_content = ' '.join(parts[1:])
             return recipient, msg_content
         else:
             return None, None
 
     def send_private_message(self, sender, recipient, message):
         if recipient in self.clients:
-            self.clients[recipient].send(f"{sender} (private): {message}".encode('utf-8'))
+            try:
+                self.clients[recipient].send(f"{sender} (private): {message}".encode('utf-8'))
+            except Exception as e:
+                print(f"Error sending private message to {recipient}: {e}")
         else:
             if recipient not in self.pending_messages:
                 self.pending_messages[recipient] = Queue()
@@ -70,21 +74,26 @@ class ChatServer:
     def start(self):
         self.server.bind((self.host, self.port))
         self.server.listen(5)
+        print(f"Server listening on {self.host}:{self.port}")
 
         while True:
-            print(f"Server listening on {self.host}:{self.port}")
             client_socket, addr = self.server.accept()
 
             username = client_socket.recv(1024).decode('utf-8')
+            if not username or username in self.clients:
+                client_socket.send('Invalid or duplicate username.\n'.encode('utf-8'))
+                client_socket.close()
+                continue
 
             print(f"Accepted connection from {username} at {addr}")
-            self.broadcast(f'{username} has connected to the chat room')
-            client_socket.send('you are now connected!\n'.encode('utf-8'))
+            self.broadcast(f'{username} has connected to the chat room\n')
+            client_socket.send('You are now connected!\n'.encode('utf-8'))
 
             self.clients[username] = client_socket
             self.send_pending_messages(username)
 
             client_thread = threading.Thread(target=self.handle_client, args=(client_socket, username))
+            client_thread.daemon = True
             client_thread.start()
 
 if __name__ == "__main__":

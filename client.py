@@ -14,10 +14,17 @@ class ChatClient:
         self.message_window = None
 
     def connect(self):
-        self.client_socket.connect((self.server_host, self.server_port))
+        try:
+            self.client_socket.connect((self.server_host, self.server_port))
+        except Exception as e:
+            print(f"Error connecting to server: {e}")
+            self.running = False
 
     def send_message(self, message):
-        self.client_socket.send(message.encode('utf-8'))
+        try:
+            self.client_socket.send(message.encode('utf-8'))
+        except Exception as e:
+            print(f"Error sending message: {e}")
 
     def receive_messages(self):
         while self.running:
@@ -27,6 +34,7 @@ class ChatClient:
                     break
                 if message == 'QUIT':
                     self.messages.append("You have logged out successfully.")
+                    self.running = False
                     break
                 self.messages.append(message)
                 if self.message_window:
@@ -34,10 +42,13 @@ class ChatClient:
                     self.message_window.refresh()
             except Exception as e:
                 self.messages.append(f"Error receiving message: {e}")
+                self.running = False
                 break
 
     def start(self, stdscr):
         self.connect()
+        if not self.running:
+            return
 
         self.setup_curses(stdscr)
 
@@ -45,9 +56,11 @@ class ChatClient:
         self.send_message(self.username)
 
         receive_thread = threading.Thread(target=self.receive_messages)
+        receive_thread.daemon = True
         receive_thread.start()
 
         input_thread = threading.Thread(target=self.input_handler)
+        input_thread.daemon = True
         input_thread.start()
 
         while self.running:
@@ -92,7 +105,7 @@ class ChatClient:
         stdscr.addstr(0, 0, prompt)
         stdscr.refresh()
         curses.echo()
-        input_str = stdscr.getstr(0, len(prompt)).decode('utf-8')
+        input_str = stdscr.getstr().decode('utf-8').strip()
         curses.noecho()
         return input_str
 
@@ -101,7 +114,7 @@ class ChatClient:
         stdscr.addstr(0, 0, "Enter message: ")
         stdscr.refresh()
         curses.echo()
-        input_str = stdscr.getstr(0, len("Enter message: ")).decode('utf-8')
+        input_str = stdscr.getstr().decode('utf-8').strip()
         curses.noecho()
         return input_str
 
